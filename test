@@ -1,0 +1,37 @@
+import cv2 # type: ignore
+import itertools
+import numpy as np # type: ignore
+
+image = cv2.imread("letter.png", cv2.IMREAD_COLOR)
+HSVimage=np.zeros(np.shape(image))
+for y, row in enumerate(image):
+    for x, pixel in enumerate(row):
+        pixel = pixel.astype(np.float64)
+        if (np.sqrt(((pixel[2]-pixel[1])**2)+(pixel[2]-pixel[0])*(pixel[1]-pixel[0])))==0:
+            theta = 0
+        else:
+            theta_a = (((pixel[2]-pixel[1])+(pixel[2]-pixel[0]))/2)       
+            theta_u = (np.sqrt(((pixel[2]-pixel[1])**2)+(pixel[2]-pixel[0])*(pixel[1]-pixel[0])))
+            theta = np.acos(theta_a/theta_u)
+        
+        if pixel[0]<=pixel[1]:
+            hue = theta
+        else:
+            hue =np.pi-theta
+
+        if (pixel[2]+pixel[1]+pixel[0])==0:
+            sat = 0
+        else:
+           sat = 1-(3*np.min([pixel[2],pixel[1],pixel[0]])/(pixel[2]+pixel[1]+pixel[0]))
+
+        inten = (pixel[2]+pixel[1]+pixel[0])/3
+        
+        HSVimage[y,x]=[hue,sat,inten] # type: ignore
+
+
+        
+cv2.imshow("HUE", HSVimage[:,:,0])
+cv2.imshow("SAT", HSVimage[:,:,1])
+cv2.imshow("INT", HSVimage[:,:,2])
+cv2.waitKey(0)
+cv2.destroyallwindows()
