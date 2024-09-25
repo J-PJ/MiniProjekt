@@ -2,6 +2,7 @@ import cv2 as cv  # type: ignore
 import numpy as np  # type: ignore
 import matplotlib.pyplot as plt
 
+
 # Read the image
 image = cv.imread("4.jpg", cv.IMREAD_COLOR)  # type: ignore
 #Scoreimage = np.zeros(np.shape(image))  # Make a copy of the original image to store the result
