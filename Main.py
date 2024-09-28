@@ -53,8 +53,8 @@ cv.imshow("test ", maskhav_s)  # type: ignore
 
 # Display the results
 cv.imshow("Hav with Contours", maskhav_contours)  # type: ignore
-#cv.imshow("Mark with Contours", maskmark_contours)  # type: ignore
-#cv.imshow("Skov with Contours", maskskov_contours)  # type: ignore
+cv.imshow("Mark with Contours", maskmark_contours)  # type: ignore
+cv.imshow("Skov with Contours", maskskov_contours)  # type: ignore
 
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows
