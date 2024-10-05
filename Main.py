@@ -14,7 +14,7 @@ maskmark = cv.inRange(hsv, (20, 200, 185), (29, 255, 255))  # yellow
 maskskov = cv.inRange(hsv, (40, 50, 0), (65, 255, 60))  # green
 Grassland = cv.inRange(hsv, (35, 0, 120), (60, 255, 255))  # green
 mine = cv.inRange(hsv, (19, 40, 0), (28, 190, 255))  # green
-
+start = cv.inRange(hsv, (80, 0, 0), (120, 190, 255))  # green
 
 kernal_size = 5
 # Define kernel for erosion and dilation
@@ -30,26 +30,56 @@ dilated_mark = process_mask(maskmark)
 dilated_skov = process_mask(maskskov)
 dilated_grass = process_mask(Grassland)
 dilated_mine = process_mask(mine)
+dilated_start = process_mask(start)
 
-def count_regions(mask):
-    num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(mask, connectivity=8)
-    # Filter out very small regions (likely noise)
-    significant_regions = [i for i in range(1, num_labels) if stats[i, cv.CC_STAT_AREA] > 100]
-    return len(significant_regions)
+def create_grid(image, grid_size=5):
+    height, width = image.shape[:2]
+    grid_h, grid_w = height // grid_size, width // grid_size
+    return [(i*grid_h, j*grid_w, (i+1)*grid_h, (j+1)*grid_w) 
+            for i in range(grid_size) for j in range(grid_size)]
 
-# Count regions for each terrain type
-water_count = count_regions(dilated_hav)
-field_count = count_regions(dilated_mark)
-forest_count = count_regions(dilated_skov)
-mine_count = count_regions(dilated_grass)
-dilated_mine = count_regions(dilated_mine)
+def analyze_grid_square(x1, y1, x2, y2, masks):
+    results = []
+    for name, mask in masks.items():
+        count = np.sum(mask[y1:y2, x1:x2]) // 255
+        total = (y2-y1) * (x2-x1)
+        percentage = count / total
+        results.append((name, percentage))
+    return max(results, key=lambda x: x[1])[0]
 
-# Print results
-print(f"Water regions: {water_count}")
-print(f"Field regions: {field_count}")
-print(f"Forest regions: {forest_count}")
-print(f"Mine regions: {mine_count}")
+# Create masks dictionary
+masks = {
+    'hav': dilated_hav,
+    'mark': dilated_mark,
+    'skov': dilated_skov,
+    'grass': dilated_grass,
+    'mine': dilated_mine,
+    'Start': dilated_start
+}
 
+# Create 5x5 grid
+grid = create_grid(image)
+
+# Analyze each grid square
+matrix = []
+for i in range(5):
+    row = []
+    for j in range(5):
+        x1, y1, x2, y2 = grid[i*5 + j]
+        square_type = analyze_grid_square(x1, y1, x2, y2, masks)
+        row.append(square_type)
+    matrix.append(row)
+
+# Print the resulting matrix
+for row in matrix:
+    print(row)
+
+# Optionally, visualize the grid on the original image
+grid_image = image.copy()
+for x1, y1, x2, y2 in grid:
+     cv.rectangle(grid_image, (y1, x1), (y2, x2), (0, 255, 0), 2)
+
+cv.imshow("Grid", grid_image)
 
 # Display the results
 # cv.imshow("Hav", dilated_hav)
@@ -57,6 +87,8 @@ print(f"Mine regions: {mine_count}")
 # cv.imshow("Skov", dilated_skov)
 # cv.imshow("Grass", dilated_grass)
 # cv.imshow("Mine", dilated_mine)
+#cv.imshow("start", start)
+#cv.imshow("start", dilated_start)
 
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows
