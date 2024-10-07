@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read the image
-image = cv.imread("4.jpg", cv.IMREAD_COLOR)
+image = cv.imread("17.jpg", cv.IMREAD_COLOR)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
