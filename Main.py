@@ -16,10 +16,11 @@ Grassland = cv.inRange(hsv, (35, 0, 120), (60, 255, 255))  # green
 mine = cv.inRange(hsv, (19, 40, 0), (28, 190, 255))  # green
 start = cv.inRange(hsv, (80, 0, 0), (120, 190, 255))  # green
 
-kernal_size = 5
 # Define kernel for erosion and dilation
+kernal_size = 5
 kernel = np.ones((kernal_size,kernal_size), np.uint8)
 
+# useing opening to get a clean marsk
 def process_mask(mask):
     eroded = cv.erode(mask, kernel, iterations=1)
     dilated = cv.dilate(eroded, kernel, iterations=1)
@@ -32,12 +33,14 @@ dilated_grass = process_mask(Grassland)
 dilated_mine = process_mask(mine)
 dilated_start = process_mask(start)
 
+# making a 5*5 grid
 def create_grid(image, grid_size=5):
     height, width = image.shape[:2]
     grid_h, grid_w = height // grid_size, width // grid_size
     return [(i*grid_h, j*grid_w, (i+1)*grid_h, (j+1)*grid_w) 
             for i in range(grid_size) for j in range(grid_size)]
 
+# seeing what type there is in eage grid
 def analyze_grid_square(x1, y1, x2, y2, masks):
     results = []
     for name, mask in masks.items():
@@ -74,20 +77,20 @@ for i in range(5):
 for row in matrix:
     print(row)
 
-# Optionally, visualize the grid on the original image
+# visualize the grid on the original image
 grid_image = image.copy()
 for x1, y1, x2, y2 in grid:
      cv.rectangle(grid_image, (y1, x1), (y2, x2), (0, 255, 0), 2)
 
 
-def count_points():
+#def count_points():
 
 
 
 cv.imshow("Grid", grid_image)
 
 # Display the results
-# cv.imshow("Hav", dilated_hav)
+#cv.imshow("Hav", dilated_hav)
 # cv.imshow("Mark", dilated_mark)
 # cv.imshow("Skov", dilated_skov)
 # cv.imshow("Grass", dilated_grass)
