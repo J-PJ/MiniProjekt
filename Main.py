@@ -83,7 +83,43 @@ for x1, y1, x2, y2 in grid:
      cv.rectangle(grid_image, (y1, x1), (y2, x2), (0, 255, 0), 2)
 
 
-#def count_points():
+def count_points(matrix):
+    def dfs(i, j, type, visited):
+        if (i < 0 or i >= len(matrix) or 
+            j < 0 or j >= len(matrix[0]) or 
+            visited[i][j] or 
+            matrix[i][j] != type):
+            return 0
+        
+        visited[i][j] = True
+        count = 1
+        
+        # Check all 4 directions
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        for di, dj in directions:
+            count += dfs(i + di, j + dj, type, visited)
+        
+        return count
+
+    visited = [[False for _ in range(len(matrix[0]))] for _ in range(len(matrix))]
+    points = {type: [] for type in set(sum(matrix, []))}
+    
+    for i in range(len(matrix)):
+        for j in range(len(matrix[0])):
+            if not visited[i][j]:
+                type = matrix[i][j]
+                group_size = dfs(i, j, type, visited)
+                if group_size > 0: 
+                    points[type].append(group_size)
+    
+    return points
+
+# Use the function
+point_counts = count_points(matrix)
+
+# Print the results
+for type, groups in point_counts.items():
+    print(f"{type}: {groups} - Total: {sum(groups)}")
 
 
 
