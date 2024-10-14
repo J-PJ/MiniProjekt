@@ -16,7 +16,7 @@ Grassland = cv.inRange(hsv, (35, 0, 120), (60, 255, 255))  # green
 wastland = cv.inRange(hsv, (19, 40, 0), (28, 190, 155))  # brown
 mine = cv.inRange(hsv, (0, 0, 0), (255, 255, 40))  # sort
 start = cv.inRange(hsv, (80, 0, 0), (120, 190, 255))  # brown blue
-bord = cv.inRange(hsv, (19, 40, 150), (28, 190, 255))  # brown
+bord = cv.inRange(hsv, (19, 40, 135), (28, 190, 255))  # brown
 
 # Define kernel for erosion and dilation
 kernal_size = 5
@@ -57,7 +57,7 @@ def analyze_grid_square(x1, y1, x2, y2, masks):
     
     max_result = max(results, key=lambda x: x[1])
     if max_result[1] < 0.01:  # Check if the highest percentage is below 1%
-        return "no board"
+        return "error"
     else:
         return max_result[0]
 

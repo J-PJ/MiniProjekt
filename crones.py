@@ -3,15 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read the image
-image = cv.imread("4.jpg", cv.IMREAD_COLOR)
+image = cv.imread("9.jpg", cv.IMREAD_COLOR)
 krone = cv.imread("krone.png", cv.IMREAD_COLOR)
-search = cv.matchTemplate(krone,image,1)
+search = cv.matchTemplate(image,krone,0)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
 
 # Create masks
-maskkrone = cv.inRange(hsv, (23, 0, 100), (35, 100, 255))  # blue
+maskkrone = cv.inRange(hsv, (0, 0, 110), (255, 78, 187))  # blue
 
 
 # Define kernel for erosion and dilation
@@ -74,7 +74,8 @@ for row in matrix:
 
 
 
-cv.imshow("start", search)
+cv.imshow("krone", maskkrone)
+cv.imshow("Dkrone", dilated_krone)
 
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows
