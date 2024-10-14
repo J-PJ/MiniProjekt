@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 # Read the image
 image = cv.imread("4.jpg", cv.IMREAD_COLOR)
+krone = cv.imread("krone.png", cv.IMREAD_COLOR)
+search = cv.matchTemplate(krone,image,1)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -40,7 +42,12 @@ def analyze_grid_square(x1, y1, x2, y2, masks):
         total = (y2-y1) * (x2-x1)
         percentage = count / total
         results.append((name, percentage))
-    return max(results, key=lambda x: x[1])[0]
+    
+    max_result = max(results, key=lambda x: x[1])
+    if max_result[1] < 0.01:  # Check if the highest percentage is below 1%
+        return "no board"
+    else:
+        return max_result[0]
 
 # Create masks dictionary
 masks = {
@@ -64,14 +71,10 @@ for i in range(5):
 for row in matrix:
     print(row)
 
-# visualize the grid on the original image
-grid_image = image.copy()
-for x1, y1, x2, y2 in grid:
-     cv.rectangle(grid_image, (y1, x1), (y2, x2), (0, 255, 0), 2)
 
 
 
-cv.imshow("start", maskkrone)
+cv.imshow("start", search)
 
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows

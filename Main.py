@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read the image
-image = cv.imread("4.jpg", cv.IMREAD_COLOR)
+image = cv.imread("9.jpg", cv.IMREAD_COLOR)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -13,8 +13,10 @@ maskhav = cv.inRange(hsv, (95, 170, 100), (122, 255, 255))  # blue
 maskmark = cv.inRange(hsv, (20, 200, 185), (29, 255, 255))  # yellow
 maskskov = cv.inRange(hsv, (40, 50, 0), (65, 255, 60))  # green
 Grassland = cv.inRange(hsv, (35, 0, 120), (60, 255, 255))  # green
-mine = cv.inRange(hsv, (19, 40, 0), (28, 190, 255))  # green
-start = cv.inRange(hsv, (80, 0, 0), (120, 190, 255))  # green
+wastland = cv.inRange(hsv, (19, 40, 0), (28, 190, 155))  # brown
+mine = cv.inRange(hsv, (0, 0, 0), (255, 255, 40))  # sort
+start = cv.inRange(hsv, (80, 0, 0), (120, 190, 255))  # brown blue
+bord = cv.inRange(hsv, (19, 40, 150), (28, 190, 255))  # brown
 
 # Define kernel for erosion and dilation
 kernal_size = 5
@@ -30,8 +32,12 @@ dilated_hav = process_mask(maskhav)
 dilated_mark = process_mask(maskmark)
 dilated_skov = process_mask(maskskov)
 dilated_grass = process_mask(Grassland)
+dilated_wastland = process_mask(wastland)
 dilated_mine = process_mask(mine)
 dilated_start = process_mask(start)
+dilated_bord = process_mask(bord)
+
+
 
 # making a 5*5 grid
 def create_grid(image, grid_size=5):
@@ -48,7 +54,12 @@ def analyze_grid_square(x1, y1, x2, y2, masks):
         total = (y2-y1) * (x2-x1)
         percentage = count / total
         results.append((name, percentage))
-    return max(results, key=lambda x: x[1])[0]
+    
+    max_result = max(results, key=lambda x: x[1])
+    if max_result[1] < 0.01:  # Check if the highest percentage is below 1%
+        return "no board"
+    else:
+        return max_result[0]
 
 # Create masks dictionary
 masks = {
@@ -56,8 +67,10 @@ masks = {
     'mark': dilated_mark,
     'skov': dilated_skov,
     'grass': dilated_grass,
+    'wastland': dilated_wastland,
     'mine': dilated_mine,
-    'Start': dilated_start
+    'Start': dilated_start,
+    'bord': dilated_bord,
 }
 
 # Create 5x5 grid
@@ -130,7 +143,8 @@ cv.imshow("Grid", grid_image)
 # cv.imshow("Mark", dilated_mark)
 # cv.imshow("Skov", dilated_skov)
 # cv.imshow("Grass", dilated_grass)
-# cv.imshow("Mine", dilated_mine)
+#cv.imshow("wasteland",dilated_wastland)
+#cv.imshow("Mine", dilated_mine)
 #cv.imshow("start", start)
 #cv.imshow("start", dilated_start)
 
