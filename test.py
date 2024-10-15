@@ -273,49 +273,50 @@ except ValueError as e:
 
 
 
-def count_points_and_crowns(land_matrix, crown_matrix):
-    def dfs(i, j, land_type, visited):
-        # Base conditions for DFS traversal
-        if (i < 0 or i >= len(land_matrix) or 
-            j < 0 or j >= len(land_matrix[0]) or 
+def count_points(terrain_matrix, crown_matrix):
+    def dfs(i, j, type, visited):
+        if (i < 0 or i >= len(terrain_matrix) or 
+            j < 0 or j >= len(terrain_matrix[0]) or 
             visited[i][j] or 
-            land_matrix[i][j] != land_type):
+            terrain_matrix[i][j] != type):
             return 0, 0
         
         visited[i][j] = True
-        group_size = 1
-        crown_count = crown_matrix[i][j]  # Include crowns from the current cell
-
-        # Check all 4 possible directions (right, down, left, up)
+        area = 1
+        crowns = crown_matrix[i][j]
+        
+        # Check all 4 directions
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         for di, dj in directions:
-            size, crowns = dfs(i + di, j + dj, land_type, visited)
-            group_size += size
-            crown_count += crowns
+            sub_area, sub_crowns = dfs(i + di, j + dj, type, visited)
+            area += sub_area
+            crowns += sub_crowns
+        
+        return area, crowns
 
-        return group_size, crown_count
-
-    visited = [[False for _ in range(len(land_matrix[0]))] for _ in range(len(land_matrix))]
-    points = {land_type: [] for land_type in set(sum(land_matrix, []))}
-
-    for i in range(len(land_matrix)):
-        for j in range(len(land_matrix[0])):
+    visited = [[False for _ in range(len(terrain_matrix[0]))] for _ in range(len(terrain_matrix))]
+    points = {type: [] for type in set(sum(terrain_matrix, []))}
+    
+    for i in range(len(terrain_matrix)):
+        for j in range(len(terrain_matrix[0])):
             if not visited[i][j]:
-                land_type = land_matrix[i][j]
-                group_size, total_crowns = dfs(i, j, land_type, visited)
-                if group_size > 0:
-                    points[land_type].append((group_size, total_crowns))
-
+                type = terrain_matrix[i][j]
+                area, crowns = dfs(i, j, type, visited)
+                if area > 0:
+                    points[type].append(area * crowns)
+    
     return points
 
-# Use the new function with the tile type matrix and the crown count matrix
-points_with_crowns = count_points_and_crowns(matrix, crowns_count_matrix)
+# Use the function
+point_counts = count_points(rotated_matrix, crowns_count_matrix)
 
-# Print the results for both land type groups and crown counts
-for land_type, groups in points_with_crowns.items():
-    group_sizes = [group[0] for group in groups]
-    crown_counts = [group[1] for group in groups]
-    print(f"{land_type}: Groups Sizes: {group_sizes}, Crowns: {crown_counts} - Total Points: {sum(group_size * crown for group_size, crown in groups)}")
+# Print the results
+print("Points per terrain type:")
+for type, groups in point_counts.items():
+    print(f"{type}: {groups} - Total: {sum(groups)}")
 
+# Calculate and print total points
+total_points = sum(sum(groups) for groups in point_counts.values())
+print(f"\nTotal points: {total_points}")
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows
