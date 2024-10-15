@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read the image
-image = cv.imread("9.jpg", cv.IMREAD_COLOR)
+image = cv.imread("4.jpg", cv.IMREAD_COLOR)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -56,7 +56,7 @@ def analyze_grid_square(x1, y1, x2, y2, masks):
         results.append((name, percentage))
     
     max_result = max(results, key=lambda x: x[1])
-    if max_result[1] < 0.01:  # Check if the highest percentage is below 1%
+    if max_result[1] < 0.01:  # Check if the highest percentage is below 1% to check for erros
         return "error"
     else:
         return max_result[0]
@@ -137,12 +137,13 @@ for type, groups in point_counts.items():
 
 
 cv.imshow("Grid", grid_image)
+#cv.imshow("test",wastland)
 
 # Display the results
 #cv.imshow("Hav", dilated_hav)
-# cv.imshow("Mark", dilated_mark)
-# cv.imshow("Skov", dilated_skov)
-# cv.imshow("Grass", dilated_grass)
+#cv.imshow("Mark", dilated_mark)
+#cv.imshow("Skov", dilated_skov)
+#cv.imshow("Grass", dilated_grass)
 #cv.imshow("wasteland",dilated_wastland)
 #cv.imshow("Mine", dilated_mine)
 #cv.imshow("start", start)
