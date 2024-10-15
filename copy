@@ -1,10 +1,9 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 # Read the image
-image = cv.imread("9.jpg", cv.IMREAD_COLOR)
+image = cv.imread("4.jpg", cv.IMREAD_COLOR)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -243,9 +242,13 @@ class Crown_Temps:
 
 # Usage Example
 image_paths = [
-        'OGForest1.jpg', 'OGGrass1.jpg', 'OGMine1.jpg',
-        'OGOcean1.jpg', 'OGWaste1.jpg', 'OGWheat1.jpg'
-    ]
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGForest1.jpg',
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGGrass1.jpg',
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGMine1.jpg',
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGOcean1.jpg',
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGWaste1.jpg',
+    'C:/Users/jacob/Downloads/King Domino dataset/King Domino dataset/Cropped and perspective corrected boards/OGWheat1.jpg'
+]
 
 try:
     crown_temps = Crown_Temps(image_paths)
@@ -273,49 +276,57 @@ except ValueError as e:
 
 
 
-def count_points_and_crowns(land_matrix, crown_matrix):
-    def dfs(i, j, land_type, visited):
-        # Base conditions for DFS traversal
-        if (i < 0 or i >= len(land_matrix) or 
-            j < 0 or j >= len(land_matrix[0]) or 
+
+
+
+
+
+
+
+
+
+
+
+def count_points(matrix):
+    def dfs(i, j, type, visited):
+        if (i < 0 or i >= len(matrix) or 
+            j < 0 or j >= len(matrix[0]) or 
             visited[i][j] or 
-            land_matrix[i][j] != land_type):
-            return 0, 0
+            matrix[i][j] != type):
+            return 0
         
         visited[i][j] = True
-        group_size = 1
-        crown_count = crown_matrix[i][j]  # Include crowns from the current cell
-
-        # Check all 4 possible directions (right, down, left, up)
+        count = 1
+        
+        # Check all 4 directions
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         for di, dj in directions:
-            size, crowns = dfs(i + di, j + dj, land_type, visited)
-            group_size += size
-            crown_count += crowns
+            count += dfs(i + di, j + dj, type, visited)
+        
+        return count
 
-        return group_size, crown_count
-
-    visited = [[False for _ in range(len(land_matrix[0]))] for _ in range(len(land_matrix))]
-    points = {land_type: [] for land_type in set(sum(land_matrix, []))}
-
-    for i in range(len(land_matrix)):
-        for j in range(len(land_matrix[0])):
+    visited = [[False for _ in range(len(matrix[0]))] for _ in range(len(matrix))]
+    points = {type: [] for type in set(sum(matrix, []))}
+    
+    for i in range(len(matrix)):
+        for j in range(len(matrix[0])):
             if not visited[i][j]:
-                land_type = land_matrix[i][j]
-                group_size, total_crowns = dfs(i, j, land_type, visited)
-                if group_size > 0:
-                    points[land_type].append((group_size, total_crowns))
-
+                type = matrix[i][j]
+                group_size = dfs(i, j, type, visited)
+                if group_size > 0: 
+                    points[type].append(group_size)
+    
     return points
 
-# Use the new function with the tile type matrix and the crown count matrix
-points_with_crowns = count_points_and_crowns(matrix, crowns_count_matrix)
+# Use the function
+point_counts = count_points(matrix)
 
-# Print the results for both land type groups and crown counts
-for land_type, groups in points_with_crowns.items():
-    group_sizes = [group[0] for group in groups]
-    crown_counts = [group[1] for group in groups]
-    print(f"{land_type}: Groups Sizes: {group_sizes}, Crowns: {crown_counts} - Total Points: {sum(group_size * crown for group_size, crown in groups)}")
+# Print the results
+for type, groups in point_counts.items():
+    print(f"{type}: {groups} - Total: {sum(groups)}")
+
+
+
 
 cv.waitKey(0)  # Wait for a key press
-cv.destroyAllWindows()  # Close all windows
+cv.destroyAllWindows()  # Close all windows: make the count points work whit crowns_count_matrix so it does the same for both matix
