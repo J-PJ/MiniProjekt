@@ -85,9 +85,13 @@ for i in range(5):
         square_type = analyze_grid_square(x1, y1, x2, y2, masks)
         row.append(square_type)
     matrix.append(row)
+    
+matrix = matrix[::-1]
+rotated_matrix = list(zip(*matrix[::-1]))
 
-# Print the resulting matrix
-for row in matrix:
+# Udskriv den resulterende matrix
+print("Roteret Matrix:")
+for row in rotated_matrix:
     print(row)
 
 # visualize the grid on the original image
