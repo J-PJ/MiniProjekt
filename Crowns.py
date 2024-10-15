@@ -91,6 +91,11 @@ class Crown_Temps:
     def find_crowns(self, search_image):
         """Find crowns in the search image using template matching and color filtering."""
         found_crowns = []
+        height, width, _ = search_image.shape
+
+        # Initialize a 5x5 matrix for counting crowns
+        crowns_count_matrix = np.zeros((5, 5), dtype=int)
+
         for template_group in self.template_groups:
             for template in template_group:
                 template_gray = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
@@ -110,11 +115,22 @@ class Crown_Temps:
         # Apply non-maximum suppression
         final_crowns = self.non_max_suppression(found_crowns, 0.2)
 
+        # Calculate cell dimensions
+        cell_width = width // 5
+        cell_height = height // 5
+
+        # Update the crowns count matrix
+        for (x, y, w, h) in final_crowns:
+            # Determine which cell the crown belongs to
+            cell_x = min(x // cell_width, 4)  # Ensure it does not exceed matrix bounds
+            cell_y = min(y // cell_height, 4)  # Ensure it does not exceed matrix bounds
+            crowns_count_matrix[cell_y, cell_x] += 1  # Increment the count
+
         # Highlight the crowns on the search image
         for (x, y, w, h) in final_crowns:
             cv.rectangle(search_image, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw rectangle
 
-        return search_image, final_crowns
+        return search_image, crowns_count_matrix  # Return the search image and the crowns count matrix
 
     def display_images(self):
         """Display all images in each group."""
@@ -143,11 +159,11 @@ try:
         raise ValueError("Error: Could not open or find the search image.")
 
     # Find crowns in the search image
-    result_image, crown_coordinates = crown_temps.find_crowns(search_image)
+    result_image, crowns_count_matrix = crown_temps.find_crowns(search_image)
 
-    # Print the coordinates of found crowns
-    for i, (x, y, w, h) in enumerate(crown_coordinates):
-        print(f"Crown {i + 1}: Top-left: ({x}, {y}), Width: {w}, Height: {h}")
+    # Print the 5x5 matrix of crown counts
+    print("Crown Count Matrix:")
+    print(crowns_count_matrix)
 
     # Display the result
     cv.imshow("Detected Crowns", result_image)
