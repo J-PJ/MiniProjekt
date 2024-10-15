@@ -1,9 +1,10 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 # Read the image
-image = cv.imread("4.jpg", cv.IMREAD_COLOR)
+image = cv.imread("9.jpg", cv.IMREAD_COLOR)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -100,58 +101,229 @@ for x1, y1, x2, y2 in grid:
      cv.rectangle(grid_image, (y1, x1), (y2, x2), (0, 255, 0), 2)
 
 
-def count_points(matrix):
+
+
+class Crown_Temps:
+    def __init__(self, image_paths):
+        """Initialize with a list of image file paths."""
+        self.image_paths = image_paths
+        self.template_groups = []  # List to store grouped images
+        self.create_template_groups()
+
+    def rotate_image(self, image, angle):
+        """Rotate the image by the specified angle."""
+        if angle == 0:
+            return image
+        elif angle == 90:
+            return cv.rotate(image, cv.ROTATE_90_CLOCKWISE)
+        elif angle == 180:
+            return cv.rotate(image, cv.ROTATE_180)
+        elif angle == 270:
+            return cv.rotate(image, cv.ROTATE_90_COUNTERCLOCKWISE)
+        else:
+            raise ValueError("Angle must be one of: 0, 90, 180, 270.")
+
+    def create_template_groups(self):
+        """Create lists of original and rotated images for each template."""
+        for path in self.image_paths:
+            if not os.path.isfile(path):
+                raise ValueError(f"Error: File not found at {path}")
+
+            image = cv.imread(path)
+            if image is None:
+                raise ValueError(f"Error: Could not open or find the image at {path}")
+
+            rotated_images = [self.rotate_image(image, angle) for angle in [0, 90, 180, 270]]
+            self.template_groups.append(rotated_images)
+
+    def non_max_suppression(self, boxes, overlapThresh):
+        """Perform non-maximum suppression to eliminate overlapping bounding boxes."""
+        if len(boxes) == 0:
+            return []
+
+        boxes = np.array(boxes)
+        pick = []
+
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 0] + boxes[:, 2]
+        y2 = boxes[:, 1] + boxes[:, 3]
+
+        area = (x2 - x1 + 1) * (y2 - y1 + 1)
+        idxs = np.argsort(y2)
+
+        while len(idxs) > 0:
+            last = len(idxs) - 1
+            i = idxs[last]
+            pick.append(i)
+
+            xx1 = np.maximum(x1[i], x1[idxs[:last]])
+            yy1 = np.maximum(y1[i], y1[idxs[:last]])
+            xx2 = np.minimum(x2[i], x2[idxs[:last]])
+            yy2 = np.minimum(y2[i], y2[idxs[:last]])
+
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+
+            overlap = (w * h) / area[idxs[:last]]
+
+            idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
+
+        return boxes[pick].tolist()
+
+    def is_yellow(self, image, x, y, w, h):
+        """Check if the region is predominantly yellow."""
+        region = image[y:y+h, x:x+w]
+        hsv_region = cv.cvtColor(region, cv.COLOR_BGR2HSV)
+        
+        # Define range for yellow color in HSV
+        lower_yellow = np.array([20, 100, 10])
+        upper_yellow = np.array([30, 255, 255])
+        
+        # Create a mask for yellow color
+        mask = cv.inRange(hsv_region, lower_yellow, upper_yellow)
+        
+        # Calculate the percentage of yellow pixels
+        yellow_ratio = np.sum(mask) / (w * h * 255)
+        
+        # If more than 50% of the region is yellow, consider it a yellow piece
+        return yellow_ratio > 0.5
+
+    def find_crowns(self, search_image):
+        """Find crowns in the search image using template matching and color filtering."""
+        found_crowns = []
+        height, width, _ = search_image.shape
+
+        # Initialize a 5x5 matrix for counting crowns
+        crowns_count_matrix = np.zeros((5, 5), dtype=int)
+
+        for template_group in self.template_groups:
+            for template in template_group:
+                template_gray = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
+                search_image_gray = cv.cvtColor(search_image, cv.COLOR_BGR2GRAY)
+
+                result = cv.matchTemplate(search_image_gray, template_gray, cv.TM_CCOEFF_NORMED)
+                threshold = 0.7
+                loc = np.where(result >= threshold)
+
+                h, w = template_gray.shape
+                for pt in zip(*loc[::-1]):
+                    x, y = pt
+                    # Check if the detected region is yellow
+                    if not self.is_yellow(search_image, x, y, w, h):
+                        found_crowns.append((x, y, w, h))
+
+        # Apply non-maximum suppression
+        final_crowns = self.non_max_suppression(found_crowns, 0.2)
+
+        # Calculate cell dimensions
+        cell_width = width // 5
+        cell_height = height // 5
+
+        # Update the crowns count matrix
+        for (x, y, w, h) in final_crowns:
+            # Determine which cell the crown belongs to
+            cell_x = min(x // cell_width, 4)  # Ensure it does not exceed matrix bounds
+            cell_y = min(y // cell_height, 4)  # Ensure it does not exceed matrix bounds
+            crowns_count_matrix[cell_y, cell_x] += 1  # Increment the count
+
+        # Highlight the crowns on the search image
+        for (x, y, w, h) in final_crowns:
+            cv.rectangle(search_image, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw rectangle
+
+        return search_image, crowns_count_matrix  # Return the search image and the crowns count matrix
+
+    def display_images(self):
+        """Display all images in each group."""
+        for i, images in enumerate(self.template_groups):
+            for j, img in enumerate(images):
+                cv.imshow(f"Template {i + 1} - Rotation {j * 90} degrees", img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+
+# Usage Example
+image_paths = [
+        'OGForest1.jpg', 'OGGrass1.jpg', 'OGMine1.jpg',
+        'OGOcean1.jpg', 'OGWaste1.jpg', 'OGWheat1.jpg'
+    ]
+
+try:
+    crown_temps = Crown_Temps(image_paths)
+
+    # Load the search image
+    
+    if image is None:
+        raise ValueError("Error: Could not open or find the search image.")
+
+    # Find crowns in the search image
+    result_image, crowns_count_matrix = crown_temps.find_crowns(image)
+
+    # Print the 5x5 matrix of crown counts
+    print("Crown Count Matrix:")
+    print(crowns_count_matrix)
+
+    # Display the result
+    cv.imshow("Detected Crowns", result_image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
+except ValueError as e:
+    print(e)
+
+
+def count_points(terrain_matrix, crown_matrix):
     def dfs(i, j, type, visited):
-        if (i < 0 or i >= len(matrix) or 
-            j < 0 or j >= len(matrix[0]) or 
+        if (i < 0 or i >= len(terrain_matrix) or 
+            j < 0 or j >= len(terrain_matrix[0]) or 
             visited[i][j] or 
-            matrix[i][j] != type):
-            return 0
+            terrain_matrix[i][j] != type):
+            return 0, 0
         
         visited[i][j] = True
-        count = 1
+        area = 1
+        crowns = crown_matrix[i][j]
         
         # Check all 4 directions
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         for di, dj in directions:
-            count += dfs(i + di, j + dj, type, visited)
+            sub_area, sub_crowns = dfs(i + di, j + dj, type, visited)
+            area += sub_area
+            crowns += sub_crowns
         
-        return count
+        return area, crowns
 
-    visited = [[False for _ in range(len(matrix[0]))] for _ in range(len(matrix))]
-    points = {type: [] for type in set(sum(matrix, []))}
+    # Correctly identify unique terrain types from the matrix
+    unique_terrain_types = set(item for row in terrain_matrix for item in row)
+    points = {type: [] for type in unique_terrain_types}
     
-    for i in range(len(matrix)):
-        for j in range(len(matrix[0])):
+    visited = [[False for _ in range(len(terrain_matrix[0]))] for _ in range(len(terrain_matrix))]
+    
+    for i in range(len(terrain_matrix)):
+        for j in range(len(terrain_matrix[0])):
             if not visited[i][j]:
-                type = matrix[i][j]
-                group_size = dfs(i, j, type, visited)
-                if group_size > 0: 
-                    points[type].append(group_size)
+                type = terrain_matrix[i][j]
+
+                # Ensure that "bord" always scores zero points
+                if type == "bord":
+                    continue  # Skip processing if the type is "bord"
+
+                area, crowns = dfs(i, j, type, visited)
+                if area > 0:
+                    points[type].append(area * crowns)
     
     return points
 
 # Use the function
-point_counts = count_points(matrix)
+point_counts = count_points(rotated_matrix, crowns_count_matrix)
 
 # Print the results
+print("Points per terrain type:")
 for type, groups in point_counts.items():
     print(f"{type}: {groups} - Total: {sum(groups)}")
 
-
-
-cv.imshow("Grid", grid_image)
-#cv.imshow("test",wastland)
-
-# Display the results
-#cv.imshow("Hav", dilated_hav)
-#cv.imshow("Mark", dilated_mark)
-#cv.imshow("Skov", dilated_skov)
-#cv.imshow("Grass", dilated_grass)
-#cv.imshow("wasteland",dilated_wastland)
-#cv.imshow("Mine", dilated_mine)
-#cv.imshow("start", start)
-#cv.imshow("start", dilated_start)
+# Calculate and print total points
+total_points = sum(sum(groups) for groups in point_counts.values())
+print(f"\nTotal points: {total_points}")
 
 cv.waitKey(0)  # Wait for a key press
 cv.destroyAllWindows()  # Close all windows
